@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>防災備蓄 v2</title>
+
+<style>
+body{font-family:-apple-system,sans-serif;background:#f4f7fb;padding:16px}
+div{background:white;padding:16px;margin:12px 0;border-radius:14px}
+input,select,button{width:100%;box-sizing:border-box;padding:12px;margin:6px 0;font-size:17px}
+button{background:#2563eb;color:white;border:0;border-radius:10px;font-weight:bold}
+.ok{color:green}.ng{color:#c00}
+</style>
+
+<h1>防災・備蓄管理 🧯</h1>
+
+<div>
+<b>家族構成</b><br>
+大人<input id="a" type="number" value="2">
+子ども<input id="c" type="number" value="1">
+高齢者<input id="s" type="number" value="0">
+
+備蓄日数
+<select id="d">
+<option value="3">3日</option>
+<option value="7" selected>7日</option>
+<option value="14">14日</option>
+</select>
+</div>
+
+<div>
+<b>現在の備蓄</b><br>
+飲料水（L）<input id="w" type="number" value="0">
+食事（食）<input id="f" type="number" value="0">
+簡易トイレ（回分）<input id="t" type="number" value="0">
+
+<button onclick="calc()">計算する</button>
+</div>
+
+<div>
+<b>計算結果</b>
+<p id="r">まだ計算されていません</p>
+</div>
+
+<script>
+function calc(){
+ let people=+a.value + +c.value + +s.value;
+ let days=+d.value;
+
+ let nw=people*days*3;
+ let nf=people*days*3;
+ let nt=people*days*5;
+
+ let lw=Math.max(0,nw-(+w.value));
+ let lf=Math.max(0,nf-(+f.value));
+ let lt=Math.max(0,nt-(+t.value));
+
+ function j(x,u){
+   return x===0
+   ? "<span class='ok'>✅ 備蓄OK</span>"
+   : "<span class='ng'>⚠️ あと"+x+u+"必要</span>";
+ }
+
+ r.innerHTML=
+ "家族："+people+"人<br><br>"+
+ "水　必要 "+nw+"L ／ 現在 "+w.value+"L<br>"+j(lw,"L")+"<br><br>"+
+ "食事　必要 "+nf+"食 ／ 現在 "+f.value+"食<br>"+j(lf,"食")+"<br><br>"+
+ "トイレ　必要 "+nt+"回分 ／ 現在 "+t.value+"回分<br>"+j(lt,"回分");
+}
+</script>
+</html>
