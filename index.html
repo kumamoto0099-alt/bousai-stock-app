@@ -1,29 +1,56 @@
 <!DOCTYPE html>
-
 <html lang="ja">
-
+<head>
 <meta charset="UTF-8">
-
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>防災・備蓄管理</title>
+</head>
+<body>
 
 <h1>防災・備蓄管理 🧯</h1>
 
 <p>大人</p>
-
-<input id="adult" type="number" value="2">
+<input id="adult" type="number" value="2" min="0">
 
 <p>子ども</p>
-
-<input id="child" type="number" value="1">
+<input id="child" type="number" value="1" min="0">
 
 <p>高齢者</p>
-
-<input id="senior" type="number" value="1">
+<input id="senior" type="number" value="0" min="0">
 
 <p>備蓄日数</p>
-
 <select id="days">
+  <option value="3">3日</option>
+  <option value="7" selected>7日</option>
+  <option value="14">14日</option>
+</select>
 
-<option value="3">3日</option>
+<br><br>
 
-<option value="7" selected>7日</opti
+<button onclick="calc()">計算する</button>
+
+<h2>計算結果</h2>
+<div id="result">ここに結果が表示されます</div>
+
+<script>
+function calc() {
+  var adult = Number(document.getElementById("adult").value);
+  var child = Number(document.getElementById("child").value);
+  var senior = Number(document.getElementById("senior").value);
+  var days = Number(document.getElementById("days").value);
+
+  var people = adult + child + senior;
+  var water = people * days * 3;
+  var food = people * days * 3;
+  var toilet = people * days * 5;
+
+  document.getElementById("result").innerHTML =
+    "合計人数：" + people + "人<br>" +
+    "必要な水：" + water + "L<br>" +
+    "必要な食事：" + food + "食<br>" +
+    "簡易トイレ：" + toilet + "回分";
+}
+</script>
+
+</body>
+</html>
