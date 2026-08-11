@@ -2,45 +2,38 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>防災・備蓄管理 V3</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>防災・備蓄管理 V3 修正版</title>
 
 <style>
 body{
   margin:0;
-  padding:20px;
+  padding:18px;
   background:#f4f7fb;
   font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
+  color:#222;
 }
 
-h1{
-  font-size:28px;
-  margin-bottom:5px;
-}
-
-.subtitle{
-  color:#666;
-  margin-bottom:20px;
-}
+h1{font-size:27px;margin-bottom:6px}
 
 .card{
-  background:white;
-  padding:20px;
+  background:#fff;
+  padding:18px;
   border-radius:18px;
-  margin-bottom:18px;
+  margin-bottom:16px;
 }
 
 label{
   display:block;
   font-weight:bold;
-  margin-top:15px;
-  margin-bottom:6px;
+  margin-top:14px;
+  margin-bottom:5px;
 }
 
 input,select{
   width:100%;
   box-sizing:border-box;
-  padding:14px;
+  padding:13px;
   font-size:18px;
   border:1px solid #ddd;
   border-radius:10px;
@@ -48,48 +41,34 @@ input,select{
 
 button{
   width:100%;
-  padding:16px;
-  margin-top:20px;
+  padding:15px;
+  margin-top:14px;
   border:0;
   border-radius:12px;
-  background:#3867e8;
-  color:white;
-  font-size:20px;
+  font-size:19px;
   font-weight:bold;
+  color:white;
 }
 
-.save{
-  background:#198754;
-}
-
-.reset{
-  background:#777;
-}
+#calcBtn{background:#3867e8}
+#saveBtn{background:#198754}
+#resetBtn{background:#777}
 
 .result{
   font-size:18px;
   line-height:1.7;
 }
 
-.ok{
-  color:#198754;
-  font-weight:bold;
-}
-
-.ng{
-  color:#c52b1e;
-  font-weight:bold;
-}
+.ok{color:#198754;font-weight:bold}
+.ng{color:#c52b1e;font-weight:bold}
 </style>
 </head>
 
 <body>
 
 <h1>防災・備蓄管理 🧯</h1>
-<div class="subtitle">家族に必要な備蓄量をチェック</div>
 
 <div class="card">
-
 <h2>家族構成</h2>
 
 <label>大人</label>
@@ -107,7 +86,9 @@ button{
 <option value="7" selected>7日</option>
 <option value="14">14日</option>
 </select>
+</div>
 
+<div class="card">
 <h2>現在の備蓄</h2>
 
 <label>飲料水（L）</label>
@@ -119,150 +100,179 @@ button{
 <label>簡易トイレ（回分）</label>
 <input id="toilet" type="number" min="0" value="0">
 
-<button onclick="calc()">計算する</button>
-<button class="save" onclick="saveData()">💾 保存する</button>
-<button class="reset" onclick="resetData()">保存データをリセット</button>
-
+<button id="calcBtn">計算する</button>
+<button id="saveBtn">💾 計算して保存する</button>
+<button id="resetBtn">保存データをリセット</button>
 </div>
 
 <div class="card">
-
 <h2>計算結果</h2>
-
 <div id="result" class="result">
 まだ計算されていません
 </div>
-
 </div>
 
 <script>
+document.addEventListener("DOMContentLoaded", function(){
 
-const adult = document.getElementById("adult");
-const child = document.getElementById("child");
-const senior = document.getElementById("senior");
-const days = document.getElementById("days");
+  const adult = document.getElementById("adult");
+  const child = document.getElementById("child");
+  const senior = document.getElementById("senior");
+  const days = document.getElementById("days");
 
-const water = document.getElementById("water");
-const food = document.getElementById("food");
-const toilet = document.getElementById("toilet");
+  const water = document.getElementById("water");
+  const food = document.getElementById("food");
+  const toilet = document.getElementById("toilet");
 
-const result = document.getElementById("result");
+  const result = document.getElementById("result");
 
-function calc(){
+  function valueOf(element){
+    const n = Number(element.value);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  }
 
-  const people =
-    Number(adult.value) +
-    Number(child.value) +
-    Number(senior.value);
-
-  const d = Number(days.value);
-
-  const needWater = people * d * 3;
-  const needFood = people * d * 3;
-  const needToilet = people * d * 5;
-
-  const waterLack =
-    Math.max(0, needWater - Number(water.value));
-
-  const foodLack =
-    Math.max(0, needFood - Number(food.value));
-
-  const toiletLack =
-    Math.max(0, needToilet - Number(toilet.value));
-
-  function judge(lack,unit){
-
-    if(lack === 0){
+  function judge(lack, unit){
+    if(lack <= 0){
       return "<span class='ok'>✅ 備蓄OK</span>";
     }
 
-    return "<span class='ng'>⚠️ あと" +
-      lack + unit + "必要</span>";
+    return "<span class='ng'>⚠️ あと " +
+      lack + unit + " 必要</span>";
   }
 
-  result.innerHTML =
-    "<b>家族：" + people + "人</b><br><br>" +
+  function calculate(){
 
-    "<b>💧 水</b><br>" +
-    "必要 " + needWater + "L ／ 現在 " +
-    water.value + "L<br>" +
-    judge(waterLack,"L") +
+    const people =
+      valueOf(adult) +
+      valueOf(child) +
+      valueOf(senior);
 
-    "<br><br><b>🍚 食事</b><br>" +
-    "必要 " + needFood + "食 ／ 現在 " +
-    food.value + "食<br>" +
-    judge(foodLack,"食") +
+    const d = valueOf(days);
 
-    "<br><br><b>🚽 簡易トイレ</b><br>" +
-    "必要 " + needToilet + "回分 ／ 現在 " +
-    toilet.value + "回分<br>" +
-    judge(toiletLack,"回分");
-}
+    if(people <= 0){
+      result.innerHTML =
+        "<span class='ng'>家族人数を1人以上入力してください。</span>";
+      return;
+    }
 
-function saveData(){
+    const needWater = people * d * 3;
+    const needFood = people * d * 3;
+    const needToilet = people * d * 5;
 
-  const data = {
-    adult:adult.value,
-    child:child.value,
-    senior:senior.value,
-    days:days.value,
-    water:water.value,
-    food:food.value,
-    toilet:toilet.value
-  };
+    const stockWater = valueOf(water);
+    const stockFood = valueOf(food);
+    const stockToilet = valueOf(toilet);
 
-  localStorage.setItem(
-    "bousaiStockData",
-    JSON.stringify(data)
-  );
+    const lackWater =
+      Math.max(0, needWater - stockWater);
 
-  alert("備蓄データを保存しました！💾");
-}
+    const lackFood =
+      Math.max(0, needFood - stockFood);
 
-function loadData(){
+    const lackToilet =
+      Math.max(0, needToilet - stockToilet);
 
-  const saved =
-    localStorage.getItem("bousaiStockData");
+    result.innerHTML =
+      "<b>家族：" + people + "人・" + d + "日分</b><br><br>" +
 
-  if(!saved){
-    return;
+      "<b>💧 飲料水</b><br>" +
+      "必要：" + needWater + "L<br>" +
+      "現在：" + stockWater + "L<br>" +
+      judge(lackWater,"L") +
+
+      "<br><br><b>🍚 食事</b><br>" +
+      "必要：" + needFood + "食<br>" +
+      "現在：" + stockFood + "食<br>" +
+      judge(lackFood,"食") +
+
+      "<br><br><b>🚽 簡易トイレ</b><br>" +
+      "必要：" + needToilet + "回分<br>" +
+      "現在：" + stockToilet + "回分<br>" +
+      judge(lackToilet,"回分");
   }
 
-  const data = JSON.parse(saved);
+  function saveData(){
 
-  adult.value = data.adult ?? 2;
-  child.value = data.child ?? 1;
-  senior.value = data.senior ?? 0;
-  days.value = data.days ?? 7;
-  water.value = data.water ?? 0;
-  food.value = data.food ?? 0;
-  toilet.value = data.toilet ?? 0;
+    calculate();
 
-  calc();
-}
+    const data = {
+      adult:adult.value,
+      child:child.value,
+      senior:senior.value,
+      days:days.value,
+      water:water.value,
+      food:food.value,
+      toilet:toilet.value
+    };
 
-function resetData(){
+    localStorage.setItem(
+      "bousaiStockDataV3",
+      JSON.stringify(data)
+    );
 
-  if(confirm("保存した備蓄データを削除しますか？")){
+    alert("計算結果と備蓄データを保存しました！💾");
+  }
 
-    localStorage.removeItem("bousaiStockData");
+  function loadData(){
+
+    const saved =
+      localStorage.getItem("bousaiStockDataV3");
+
+    if(!saved) return;
+
+    try{
+      const data = JSON.parse(saved);
+
+      adult.value = data.adult ?? 2;
+      child.value = data.child ?? 1;
+      senior.value = data.senior ?? 0;
+      days.value = data.days ?? 7;
+      water.value = data.water ?? 0;
+      food.value = data.food ?? 0;
+      toilet.value = data.toilet ?? 0;
+
+      calculate();
+
+    }catch(e){
+      localStorage.removeItem("bousaiStockDataV3");
+    }
+  }
+
+  function resetData(){
+
+    if(!confirm("保存したデータを削除しますか？")){
+      return;
+    }
+
+    localStorage.removeItem("bousaiStockDataV3");
 
     adult.value = 2;
     child.value = 1;
     senior.value = 0;
     days.value = 7;
+
     water.value = 0;
     food.value = 0;
     toilet.value = 0;
 
     result.innerHTML =
-      "保存データをリセットしました";
-
+      "保存データをリセットしました。";
   }
-}
 
-loadData();
+  document
+    .getElementById("calcBtn")
+    .addEventListener("click", calculate);
 
+  document
+    .getElementById("saveBtn")
+    .addEventListener("click", saveData);
+
+  document
+    .getElementById("resetBtn")
+    .addEventListener("click", resetData);
+
+  loadData();
+});
 </script>
 
 </body>
