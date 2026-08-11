@@ -1,1 +1,655 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>防災・備蓄管理 V6</title>
 
+<style>
+*{box-sizing:border-box}
+
+body{
+ margin:0;
+ padding:18px;
+ background:#f4f7fb;
+ font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
+ color:#222;
+}
+
+h1{font-size:28px;margin:5px 0}
+h2{margin-top:0}
+
+.subtitle{
+ color:#666;
+ margin-bottom:18px;
+}
+
+.card{
+ background:#fff;
+ padding:18px;
+ border-radius:18px;
+ margin-bottom:16px;
+ box-shadow:0 3px 12px rgba(0,0,0,.05);
+}
+
+label{
+ display:block;
+ font-weight:bold;
+ margin-top:14px;
+ margin-bottom:6px;
+}
+
+input,select{
+ width:100%;
+ padding:13px;
+ font-size:18px;
+ border:1px solid #ddd;
+ border-radius:10px;
+ background:white;
+}
+
+button{
+ width:100%;
+ padding:15px;
+ margin-top:14px;
+ border:0;
+ border-radius:12px;
+ font-size:18px;
+ font-weight:bold;
+ color:white;
+}
+
+#calcBtn{background:#3867e8}
+#saveBtn{background:#198754}
+#resetBtn{background:#777}
+
+.stockItem{
+ padding:12px 0 18px;
+ border-bottom:1px solid #eee;
+}
+
+.stockItem:last-child{
+ border-bottom:0;
+}
+
+.expiryLabel{
+ color:#555;
+ font-size:15px;
+}
+
+.overall{
+ text-align:center;
+ padding:10px 0 18px;
+}
+
+.bigPercent{
+ font-size:42px;
+ font-weight:bold;
+}
+
+.bar{
+ width:100%;
+ height:18px;
+ background:#e5e7eb;
+ border-radius:999px;
+ overflow:hidden;
+ margin-top:8px;
+}
+
+.fill{
+ height:100%;
+ background:#3867e8;
+ width:0%;
+ transition:width .3s;
+}
+
+.resultItem{
+ padding:16px 0;
+ border-bottom:1px solid #eee;
+ line-height:1.7;
+}
+
+.resultItem:last-child{
+ border-bottom:0;
+}
+
+.ok{
+ color:#198754;
+ font-weight:bold;
+}
+
+.warn{
+ color:#e67e22;
+ font-weight:bold;
+}
+
+.ng{
+ color:#c0392b;
+ font-weight:bold;
+}
+
+.expiry{
+ margin-top:8px;
+ padding:8px 10px;
+ background:#f7f7f7;
+ border-radius:8px;
+}
+
+.note{
+ font-size:13px;
+ color:#777;
+ line-height:1.5;
+}
+</style>
+</head>
+
+<body>
+
+<h1>防災・備蓄管理 🧯</h1>
+<div class="subtitle">
+必要量・備蓄達成率・期限をまとめて管理
+</div>
+
+<div class="card">
+
+<h2>👨‍👩‍👧 家族構成</h2>
+
+<label>大人</label>
+<input id="adult" type="number" min="0" value="2">
+
+<label>子ども</label>
+<input id="child" type="number" min="0" value="1">
+
+<label>高齢者</label>
+<input id="senior" type="number" min="0" value="0">
+
+<label>備蓄日数</label>
+<select id="days">
+<option value="3">3日</option>
+<option value="7" selected>7日</option>
+<option value="14">14日</option>
+</select>
+
+</div>
+
+<div class="card">
+
+<h2>📦 現在の備蓄・期限</h2>
+
+<div class="stockItem">
+<label>💧 飲料水（L）</label>
+<input id="water" type="number" min="0" value="0">
+<label class="expiryLabel">賞味期限</label>
+<input id="waterDate" type="date">
+</div>
+
+<div class="stockItem">
+<label>🍚 食事（食）</label>
+<input id="food" type="number" min="0" value="0">
+<label class="expiryLabel">賞味期限</label>
+<input id="foodDate" type="date">
+</div>
+
+<div class="stockItem">
+<label>🚽 簡易トイレ（回分）</label>
+<input id="toilet" type="number" min="0" value="0">
+<label class="expiryLabel">使用期限</label>
+<input id="toiletDate" type="date">
+</div>
+
+<div class="stockItem">
+<label>🔥 カセットボンベ（本）</label>
+<input id="gas" type="number" min="0" value="0">
+<label class="expiryLabel">使用期限</label>
+<input id="gasDate" type="date">
+</div>
+
+<div class="stockItem">
+<label>🔋 乾電池（本）</label>
+<input id="battery" type="number" min="0" value="0">
+<label class="expiryLabel">使用推奨期限</label>
+<input id="batteryDate" type="date">
+</div>
+
+<div class="stockItem">
+<label>😷 マスク（枚）</label>
+<input id="mask" type="number" min="0" value="0">
+<label class="expiryLabel">期限（任意）</label>
+<input id="maskDate" type="date">
+</div>
+
+<div class="stockItem">
+<label>🧻 ティッシュ（箱）</label>
+<input id="tissue" type="number" min="0" value="0">
+<label class="expiryLabel">期限（任意）</label>
+<input id="tissueDate" type="date">
+</div>
+
+<div class="stockItem">
+<label>🧼 ウェットティッシュ（個）</label>
+<input id="wet" type="number" min="0" value="0">
+<label class="expiryLabel">期限</label>
+<input id="wetDate" type="date">
+</div>
+
+<button id="calcBtn">計算する</button>
+<button id="saveBtn">💾 計算して保存する</button>
+<button id="resetBtn">保存データをリセット</button>
+
+</div>
+
+<div class="card">
+
+<h2>📊 備蓄達成率</h2>
+
+<div class="overall">
+
+<div id="overallPercent" class="bigPercent">
+0%
+</div>
+
+<div>総合備蓄達成率</div>
+
+<div class="bar">
+<div id="overallBar" class="fill"></div>
+</div>
+
+</div>
+
+<div id="summary">
+まだ計算されていません
+</div>
+
+<div id="results"></div>
+
+</div>
+
+<div class="card">
+
+<h2>📅 期限の見方</h2>
+
+<div class="ok">
+✅ 31日以上
+</div>
+
+<div class="warn">
+⚠️ 期限まで30日以内
+</div>
+
+<div class="ng">
+🔴 期限切れ
+</div>
+
+<p class="note">
+期限が設定されていない備蓄品は
+「期限未登録」と表示します。
+</p>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded",function(){
+
+const ids=[
+"adult","child","senior","days",
+"water","food","toilet","gas",
+"battery","mask","tissue","wet",
+"waterDate","foodDate","toiletDate",
+"gasDate","batteryDate","maskDate",
+"tissueDate","wetDate"
+];
+
+const el={};
+
+ids.forEach(function(id){
+ el[id]=document.getElementById(id);
+});
+
+const summary=document.getElementById("summary");
+const results=document.getElementById("results");
+const overallPercent=document.getElementById("overallPercent");
+const overallBar=document.getElementById("overallBar");
+
+function num(id){
+ const n=Number(el[id].value);
+ return Number.isFinite(n)&&n>=0?n:0;
+}
+
+function percent(stock,need){
+ if(need<=0)return 100;
+ return Math.min(100,Math.round((stock/need)*100));
+}
+
+function judge(lack,unit){
+
+ if(lack<=0){
+  return "<span class='ok'>✅ 備蓄OK</span>";
+ }
+
+ return "<span class='ng'>⚠️ あと "
+ +lack+unit+" 必要</span>";
+}
+
+function expiryStatus(value){
+
+ if(!value){
+  return "📅 期限未登録";
+ }
+
+ const parts=value.split("-");
+
+ const expiryDate=new Date(
+  Number(parts[0]),
+  Number(parts[1])-1,
+  Number(parts[2])
+ );
+
+ expiryDate.setHours(0,0,0,0);
+
+ const today=new Date();
+ today.setHours(0,0,0,0);
+
+ const diff=Math.ceil(
+  (expiryDate-today)/(1000*60*60*24)
+ );
+
+ const display=
+  parts[0]+"/"+parts[1]+"/"+parts[2];
+
+ if(diff<0){
+
+  return "<span class='ng'>🔴 "
+  +display+
+  "　期限切れ（"+
+  Math.abs(diff)+"日経過）</span>";
+ }
+
+ if(diff===0){
+
+  return "<span class='ng'>🔴 "
+  +display+
+  "　本日が期限です</span>";
+ }
+
+ if(diff<=30){
+
+  return "<span class='warn'>⚠️ "
+  +display+
+  "　期限まであと"+
+  diff+"日</span>";
+ }
+
+ return "<span class='ok'>✅ "
+ +display+
+ "　期限まで"+
+ diff+"日</span>";
+}
+
+function item(
+ icon,
+ name,
+ need,
+ stock,
+ unit,
+ dateValue
+){
+
+ const lack=Math.max(0,need-stock);
+ const p=percent(stock,need);
+
+ return `
+ <div class="resultItem">
+
+ <strong>${icon} ${name}</strong><br>
+
+ 必要：${need}${unit}<br>
+ 現在：${stock}${unit}<br>
+ 達成率：${p}%
+
+ <div class="bar">
+ <div class="fill"
+ style="width:${p}%">
+ </div>
+ </div>
+
+ <br>
+
+ ${judge(lack,unit)}
+
+ <div class="expiry">
+ ${expiryStatus(dateValue)}
+ </div>
+
+ </div>
+ `;
+}
+
+function calculate(){
+
+ const people=
+ num("adult")+
+ num("child")+
+ num("senior");
+
+ const d=num("days");
+
+ if(people<=0){
+
+  summary.innerHTML=
+  "<span class='ng'>家族人数を1人以上入力してください。</span>";
+
+  results.innerHTML="";
+  overallPercent.textContent="0%";
+  overallBar.style.width="0%";
+  return;
+ }
+
+ const needWater=people*d*3;
+ const needFood=people*d*3;
+ const needToilet=people*d*5;
+ const needGas=Math.ceil(people*d/3);
+ const needBattery=Math.ceil(people*d*2/7);
+ const needMask=people*d;
+ const needTissue=Math.ceil(people*d/14);
+ const needWet=Math.ceil(people*d/10);
+
+ const data=[
+  [needWater,num("water")],
+  [needFood,num("food")],
+  [needToilet,num("toilet")],
+  [needGas,num("gas")],
+  [needBattery,num("battery")],
+  [needMask,num("mask")],
+  [needTissue,num("tissue")],
+  [needWet,num("wet")]
+ ];
+
+ let totalPercent=0;
+
+ data.forEach(function(row){
+  totalPercent+=percent(row[1],row[0]);
+ });
+
+ const overall=
+ Math.round(totalPercent/data.length);
+
+ overallPercent.textContent=overall+"%";
+ overallBar.style.width=overall+"%";
+
+ summary.innerHTML=
+ "<strong>家族："+people+
+ "人 ／ "+d+"日分</strong>";
+
+ results.innerHTML=
+
+ item(
+ "💧","飲料水",
+ needWater,num("water"),"L",
+ el.waterDate.value
+ )
+
+ +
+
+ item(
+ "🍚","食事",
+ needFood,num("food"),"食",
+ el.foodDate.value
+ )
+
+ +
+
+ item(
+ "🚽","簡易トイレ",
+ needToilet,num("toilet"),"回分",
+ el.toiletDate.value
+ )
+
+ +
+
+ item(
+ "🔥","カセットボンベ",
+ needGas,num("gas"),"本",
+ el.gasDate.value
+ )
+
+ +
+
+ item(
+ "🔋","乾電池",
+ needBattery,num("battery"),"本",
+ el.batteryDate.value
+ )
+
+ +
+
+ item(
+ "😷","マスク",
+ needMask,num("mask"),"枚",
+ el.maskDate.value
+ )
+
+ +
+
+ item(
+ "🧻","ティッシュ",
+ needTissue,num("tissue"),"箱",
+ el.tissueDate.value
+ )
+
+ +
+
+ item(
+ "🧼","ウェットティッシュ",
+ needWet,num("wet"),"個",
+ el.wetDate.value
+ );
+}
+
+function saveData(){
+
+ calculate();
+
+ const data={};
+
+ ids.forEach(function(id){
+  data[id]=el[id].value;
+ });
+
+ localStorage.setItem(
+  "bousaiStockV6",
+  JSON.stringify(data)
+ );
+
+ alert("備蓄データと期限を保存しました！💾");
+}
+
+function loadData(){
+
+ const saved=
+ localStorage.getItem("bousaiStockV6");
+
+ if(!saved)return;
+
+ try{
+
+  const data=JSON.parse(saved);
+
+  ids.forEach(function(id){
+
+   if(data[id]!==undefined){
+    el[id].value=data[id];
+   }
+
+  });
+
+  calculate();
+
+ }catch(e){
+
+  localStorage.removeItem(
+   "bousaiStockV6"
+  );
+
+ }
+}
+
+function resetData(){
+
+ if(!confirm(
+  "保存した備蓄データと期限を削除しますか？"
+ )){
+  return;
+ }
+
+ localStorage.removeItem(
+  "bousaiStockV6"
+ );
+
+ el.adult.value=2;
+ el.child.value=1;
+ el.senior.value=0;
+ el.days.value=7;
+
+ [
+ "water","food","toilet","gas",
+ "battery","mask","tissue","wet"
+ ].forEach(function(id){
+  el[id].value=0;
+ });
+
+ [
+ "waterDate","foodDate",
+ "toiletDate","gasDate",
+ "batteryDate","maskDate",
+ "tissueDate","wetDate"
+ ].forEach(function(id){
+  el[id].value="";
+ });
+
+ summary.innerHTML=
+ "保存データをリセットしました。";
+
+ results.innerHTML="";
+ overallPercent.textContent="0%";
+ overallBar.style.width="0%";
+}
+
+document
+.getElementById("calcBtn")
+.addEventListener("click",calculate);
+
+document
+.getElementById("saveBtn")
+.addEventListener("click",saveData);
+
+document
+.getElementById("resetBtn")
+.addEventListener("click",resetData);
+
+loadData();
+
+});
+</script>
+
+</body>
+</html>
