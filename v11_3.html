@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- V11.3 startup auto-calculate -->
+<title>防災・備蓄管理 V11.1 修正版</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:18px;background:#f4f7fb;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;color:#222}
+h1{font-size:28px;margin:5px 0} h2{margin-top:0}.subtitle{color:#666;margin-bottom:18px}
+.card{background:#fff;padding:18px;border-radius:18px;margin-bottom:16px;box-shadow:0 3px 12px rgba(0,0,0,.05)}
+label{display:block;font-weight:bold;margin-top:14px;margin-bottom:6px}
+input,select{width:100%;padding:13px;font-size:18px;border:1px solid #ddd;border-radius:10px;background:white}
+button{width:100%;padding:15px;margin-top:14px;border:0;border-radius:12px;font-size:18px;font-weight:bold;color:white}
+#calcBtn{background:#3867e8}#saveBtn{background:#198754}#resetBtn{background:#777}
+.stockItem{padding:12px 0 18px;border-bottom:1px solid #eee}.stockItem:last-child{border-bottom:0}
+.expiryLabel{color:#555;font-size:15px}.overall{text-align:center;padding:10px 0 18px}.bigPercent{font-size:42px;font-weight:bold}
+.bar{width:100%;height:18px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:8px}
+.fill{height:100%;background:#3867e8;width:0%;transition:width .3s}
+.resultItem{padding:16px 0;border-bottom:1px solid #eee;line-height:1.7}.resultItem:last-child{border-bottom:0}
+.ok{color:#198754;font-weight:bold}.warn{color:#e67e22;font-weight:bold}.ng{color:#c0392b;font-weight:bold}
+.expiry{margin-top:8px;padding:8px 10px;background:#f7f7f7;border-radius:8px}.note{font-size:13px;color:#777;line-height:1.5}
+.shoppingItem{padding:12px 0;border-bottom:1px solid #eee;display:flex;align-items:center;gap:12px}.shoppingItem:last-child{border-bottom:0}
+.shoppingText{flex:1;line-height:1.5}.purchaseCheck{width:24px;height:24px;flex:0 0 auto;accent-color:#198754}
+.purchased .shoppingText{text-decoration:line-through;color:#777}
+.badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:12px;font-weight:bold;margin-top:4px}
+.badgeDone{background:#e8f5ec;color:#198754}.badgeTodo{background:#fff3e8;color:#c56a00}
+
+.customItem{border:1px solid #e5e7eb;border-radius:12px;padding:12px;margin-top:10px;background:#fbfcfe}
+.customName{font-weight:bold;font-size:17px}
+.customMeta{margin-top:6px;line-height:1.6}
+.customActions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.customActions button{margin-top:10px;padding:15px 12px;font-size:17px;font-weight:bold;min-height:52px}
+.customEdit{background:#eef2f7;color:#222}
+.customDelete{background:#fff0ee;color:#a83225;border:2px solid #f0b4ac}.cancelEdit{display:none;background:#eef2f7;color:#333;margin-top:10px;padding:15px 12px;font-size:17px;font-weight:bold;min-height:52px}
+</style>
+</head>
+<body>
+<h1>防災・備蓄管理 🧯 <span style="font-size:13px;background:#e8eefc;color:#2f5fd0;padding:5px 10px;border-radius:999px;vertical-align:middle">無料版</span></h1>
+<div class="subtitle">必要量・期限・買い物をシンプルに管理</div>
+<div id="saveState" style="color:#198754;font-size:13px;font-weight:bold;margin-bottom:12px">自動保存ON</div>
+
+<div class="card"><h2>🚨 期限アラート</h2><div id="expiryAlertSummary">まだ期限チェックされていません</div></div>
+<div class="card"><h2>🛒 買い物リスト</h2><div id="shoppingList">まだ計算されていません</div></div>
+
+<div class="card">
+<h2>👨‍👩‍👧 家族構成</h2>
+<label>大人</label><input id="adult" type="number" min="0" value="2">
+<label>子ども</label><input id="child" type="number" min="0" value="1">
+<label>高齢者</label><input id="senior" type="number" min="0" value="0">
+<label>備蓄日数</label>
+<select id="days"><option value="3">3日</option><option value="7" selected>7日</option><option value="14">14日</option></select>
+</div>
+
+<div class="card">
+<h2>📦 現在の備蓄・期限</h2>
+<div class="stockItem"><label>💧 飲料水（L）</label><input id="water" type="number" min="0" value="0"><label class="expiryLabel">賞味期限</label><input id="waterDate" type="date"></div>
+<div class="stockItem"><label>🍚 食事（食）</label><input id="food" type="number" min="0" value="0"><label class="expiryLabel">賞味期限</label><input id="foodDate" type="date"></div>
+<div class="stockItem"><label>🚽 簡易トイレ（回分）</label><input id="toilet" type="number" min="0" value="0"><label class="expiryLabel">使用期限</label><input id="toiletDate" type="date"></div>
+<div class="stockItem"><label>🔥 カセットボンベ（本）</label><input id="gas" type="number" min="0" value="0"><label class="expiryLabel">使用期限</label><input id="gasDate" type="date"></div>
+<div class="stockItem"><label>🔋 乾電池（本）</label><input id="battery" type="number" min="0" value="0"><label class="expiryLabel">使用推奨期限</label><input id="batteryDate" type="date"></div>
+<div class="stockItem"><label>😷 マスク（枚）</label><input id="mask" type="number" min="0" value="0"><label class="expiryLabel">期限（任意）</label><input id="maskDate" type="date"></div>
+<div class="stockItem"><label>🧻 ティッシュ（箱）</label><input id="tissue" type="number" min="0" value="0"><label class="expiryLabel">期限（任意）</label><input id="tissueDate" type="date"></div>
+<div class="stockItem"><label>🧼 ウェットティッシュ（個）</label><input id="wet" type="number" min="0" value="0"><label class="expiryLabel">期限</label><input id="wetDate" type="date"></div>
+<button id="calcBtn">再計算する</button>
+<button id="resetBtn">全データを初期化</button>
+</div>
+
+
+<div class="card">
+<h2>➕ その他の備蓄品</h2>
+<p class="note">ライト・ラジオ・薬・ペット用品などを自由に追加できます。</p>
+
+<label>品名</label>
+<input id="customName" type="text" placeholder="例：懐中電灯">
+
+<label>数量</label>
+<input id="customQty" type="number" min="0" value="1">
+
+<label>単位</label>
+<input id="customUnit" type="text" placeholder="個">
+
+<label>期限（任意）</label>
+<input id="customDate" type="date">
+
+<button id="addCustomBtn" style="background:#198754">追加する</button>
+<button id="cancelEditBtn" class="cancelEdit" type="button">編集をやめる</button>
+<div id="customList"></div>
+</div>
+
+<div class="card">
+<h2>📊 備蓄達成率</h2>
+<div class="overall"><div id="overallPercent" class="bigPercent">0%</div><div>総合備蓄達成率</div><div class="bar"><div id="overallBar" class="fill"></div></div></div>
+<div id="summary">まだ計算されていません</div><div id="results"></div>
+</div>
+
+<div class="card">
+<h2>📅 期限の見方</h2>
+<div class="ng">🔴 期限切れ</div><div class="warn">⚠️ 30日以内</div><div style="color:#b8860b;font-weight:bold">🟡 90日以内</div><div class="ok">🟢 91日以上</div>
+<p class="note">期限が設定されていない備蓄品は「期限未登録」と表示します。</p>
+</div>
+
+<div class="card">
+<h2>ℹ️ 保存について</h2>
+<p class="note">入力した情報はこの端末のブラウザ内に保存されます。ブラウザのデータ削除や端末変更を行うと、保存内容が消える場合があります。</p>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+const ids=["adult","child","senior","days","water","food","toilet","gas","battery","mask","tissue","wet","waterDate","foodDate","toiletDate","gasDate","batteryDate","maskDate","tissueDate","wetDate"];
+const el={}; ids.forEach(id=>el[id]=document.getElementById(id));
+const summary=document.getElementById("summary"),results=document.getElementById("results"),shoppingList=document.getElementById("shoppingList"),overallPercent=document.getElementById("overallPercent"),overallBar=document.getElementById("overallBar");
+let purchased={}; let customItems=[]; let editIndex=-1;
+
+function num(id){const n=Number(el[id].value);return Number.isFinite(n)&&n>=0?n:0}
+function percent(stock,need){return need<=0?100:Math.min(100,Math.round((stock/need)*100))}
+function judge(lack,unit){return lack<=0?"<span class='ok'>✅ 備蓄OK</span>":"<span class='ng'>⚠️ あと "+lack+unit+" 必要</span>"}
+
+function expiryInfo(value){
+ if(!value)return {html:"📅 期限未登録",group:"none"};
+ const p=value.split("-"),dt=new Date(+p[0],+p[1]-1,+p[2]);dt.setHours(0,0,0,0);
+ const today=new Date();today.setHours(0,0,0,0);const diff=Math.ceil((dt-today)/86400000),display=p[0]+"/"+p[1]+"/"+p[2];
+ if(diff<0)return {html:"<span class='ng'>🔴 "+display+"　期限切れ（"+Math.abs(diff)+"日経過）</span>",group:"expired"};
+ if(diff<=30)return {html:"<span class='warn'>⚠️ "+display+"　期限まであと"+Math.max(0,diff)+"日</span>",group:"within30"};
+ if(diff<=90)return {html:"<span style='color:#b8860b;font-weight:bold'>🟡 "+display+"　期限まで"+diff+"日</span>",group:"within90"};
+ return {html:"<span class='ok'>🟢 "+display+"　期限まで"+diff+"日</span>",group:"safe"};
+}
+
+function effectiveStock(stockId,dateId){
+ const raw=num(stockId);
+ return expiryInfo(el[dateId].value).group==="expired"?0:raw;
+}
+
+function item(icon,name,need,stock,unit,dateValue){
+ const expired=expiryInfo(dateValue).group==="expired";
+ const lack=Math.max(0,need-stock),p=percent(stock,need);
+ return `<div class="resultItem"><strong>${icon} ${name}</strong><br>必要：${need}${unit}<br>有効在庫：${stock}${unit}<br>達成率：${p}%<div class="bar"><div class="fill" style="width:${p}%"></div></div><br>${judge(lack,unit)}<div class="expiry">${expiryInfo(dateValue).html}${expired?"<br><span class='ng'>※期限切れのため備蓄計算から除外</span>":""}</div></div>`;
+}
+
+function getNeeds(){
+ const people=num("adult")+num("child")+num("senior"),d=num("days");
+ return {people,days:d,water:people*d*3,food:people*d*3,toilet:people*d*5,gas:Math.ceil(people*d/3),battery:Math.ceil(people*d*2/7),mask:people*d,tissue:Math.ceil(people*d/14),wet:Math.ceil(people*d/10)};
+}
+function shoppingData(n){return [
+ {key:"water",label:"💧 飲料水",need:n.water,stock:effectiveStock("water","waterDate"),unit:"L"},
+ {key:"food",label:"🍚 食事",need:n.food,stock:effectiveStock("food","foodDate"),unit:"食"},
+ {key:"toilet",label:"🚽 簡易トイレ",need:n.toilet,stock:effectiveStock("toilet","toiletDate"),unit:"回分"},
+ {key:"gas",label:"🔥 カセットボンベ",need:n.gas,stock:effectiveStock("gas","gasDate"),unit:"本"},
+ {key:"battery",label:"🔋 乾電池",need:n.battery,stock:effectiveStock("battery","batteryDate"),unit:"本"},
+ {key:"mask",label:"😷 マスク",need:n.mask,stock:effectiveStock("mask","maskDate"),unit:"枚"},
+ {key:"tissue",label:"🧻 ティッシュ",need:n.tissue,stock:effectiveStock("tissue","tissueDate"),unit:"箱"},
+ {key:"wet",label:"🧼 ウェットティッシュ",need:n.wet,stock:effectiveStock("wet","wetDate"),unit:"個"}]}
+
+function renderShopping(n){
+ const rows=shoppingData(n).filter(r=>Math.max(0,r.need-r.stock)>0);
+ if(rows.length===0){shoppingList.innerHTML="<span class='ok'>✅ 必要な備蓄はそろっています</span>";return}
+ shoppingList.innerHTML=rows.map(r=>{
+   const lack=Math.max(0,r.need-r.stock),checked=purchased[r.key]===true;
+   return `<label class="shoppingItem ${checked?"purchased":""}"><input class="purchaseCheck" type="checkbox" data-key="${r.key}" ${checked?"checked":""}><span class="shoppingText"><strong>${r.label}</strong><br>不足：${lack}${r.unit}<br><span class="badge ${checked?"badgeDone":"badgeTodo"}">${checked?"☑️ 購入済み":"未購入"}</span></span></label>`;
+ }).join("");
+ document.querySelectorAll(".purchaseCheck").forEach(c=>c.addEventListener("change",function(){purchased[this.dataset.key]=this.checked;savePurchasedOnly();renderShopping(getNeeds())}));
+}
+
+function updateExpiryAlerts(){
+ const dateIds=["waterDate","foodDate","toiletDate","gasDate","batteryDate","maskDate","tissueDate","wetDate"];
+ let expired=0,within30=0,within90=0,safe=0,none=0;
+ dateIds.forEach(id=>{const g=expiryInfo(el[id].value).group;if(g==="expired")expired++;else if(g==="within30")within30++;else if(g==="within90")within90++;else if(g==="safe")safe++;else none++});
+ customItems.forEach(x=>{const g=expiryInfo(x.date||"").group;if(g==="expired")expired++;else if(g==="within30")within30++;else if(g==="within90")within90++;else if(g==="safe")safe++;else none++;});
+ document.getElementById("expiryAlertSummary").innerHTML="<div class='ng'>🔴 期限切れ："+expired+"件</div><br><div class='warn'>⚠️ 30日以内："+within30+"件</div><br><div style='color:#b8860b;font-weight:bold'>🟡 90日以内："+within90+"件</div><br><div class='ok'>🟢 問題なし："+safe+"件</div><br><div>📅 期限未登録："+none+"件</div>";
+}
+
+function calculate(){
+ const n=getNeeds();
+ if(n.people<=0){
+  summary.innerHTML="<span class='ng'>家族人数を1人以上入力してください。</span>";
+  results.innerHTML="";
+  shoppingList.innerHTML="";
+  overallPercent.textContent="0%";
+  overallBar.style.width="0%";
+  updateExpiryAlerts();
+  return;
+ }
+
+ // ここで一度だけ「有効在庫」を確定し、
+ // 達成率・不足量・買い物リストのすべてで同じ値を使う。
+ const rows=[
+  {key:"water",icon:"💧",name:"飲料水",need:n.water,raw:num("water"),stock:effectiveStock("water","waterDate"),unit:"L",date:el.waterDate.value},
+  {key:"food",icon:"🍚",name:"食事",need:n.food,raw:num("food"),stock:effectiveStock("food","foodDate"),unit:"食",date:el.foodDate.value},
+  {key:"toilet",icon:"🚽",name:"簡易トイレ",need:n.toilet,raw:num("toilet"),stock:effectiveStock("toilet","toiletDate"),unit:"回分",date:el.toiletDate.value},
+  {key:"gas",icon:"🔥",name:"カセットボンベ",need:n.gas,raw:num("gas"),stock:effectiveStock("gas","gasDate"),unit:"本",date:el.gasDate.value},
+  {key:"battery",icon:"🔋",name:"乾電池",need:n.battery,raw:num("battery"),stock:effectiveStock("battery","batteryDate"),unit:"本",date:el.batteryDate.value},
+  {key:"mask",icon:"😷",name:"マスク",need:n.mask,raw:num("mask"),stock:effectiveStock("mask","maskDate"),unit:"枚",date:el.maskDate.value},
+  {key:"tissue",icon:"🧻",name:"ティッシュ",need:n.tissue,raw:num("tissue"),stock:effectiveStock("tissue","tissueDate"),unit:"箱",date:el.tissueDate.value},
+  {key:"wet",icon:"🧼",name:"ウェットティッシュ",need:n.wet,raw:num("wet"),stock:effectiveStock("wet","wetDate"),unit:"個",date:el.wetDate.value}
+ ];
+
+ // 買い物リストも同じ rows の有効在庫から計算。
+ const buyRows=rows.filter(r=>Math.max(0,r.need-r.stock)>0);
+ if(buyRows.length===0){
+  shoppingList.innerHTML="<span class='ok'>✅ 必要な備蓄はそろっています</span>";
+ }else{
+  shoppingList.innerHTML=buyRows.map(r=>{
+   const lack=Math.max(0,r.need-r.stock);
+   const checked=purchased[r.key]===true;
+   const expired=expiryInfo(r.date).group==="expired";
+   return `<label class="shoppingItem ${checked?"purchased":""}">
+    <input class="purchaseCheck" type="checkbox" data-key="${r.key}" ${checked?"checked":""}>
+    <span class="shoppingText">
+     <strong>${r.icon} ${r.name}</strong><br>
+     不足：${lack}${r.unit}
+     ${expired&&r.raw>0?`<br><span class="ng">期限切れ ${r.raw}${r.unit} は在庫に含めていません</span>`:""}
+     <br><span class="badge ${checked?"badgeDone":"badgeTodo"}">${checked?"☑️ 購入済み":"未購入"}</span>
+    </span>
+   </label>`;
+  }).join("");
+
+  document.querySelectorAll(".purchaseCheck").forEach(c=>c.addEventListener("change",function(){
+   purchased[this.dataset.key]=this.checked;
+   saveNow();
+   calculate();
+  }));
+ }
+
+ let total=0;
+ rows.forEach(r=>total+=percent(r.stock,r.need));
+ const overall=Math.round(total/rows.length);
+ overallPercent.textContent=overall+"%";
+ overallBar.style.width=overall+"%";
+ summary.innerHTML="<strong>家族："+n.people+"人 ／ "+n.days+"日分</strong>";
+
+ results.innerHTML=rows.map(r=>
+  item(r.icon,r.name,r.need,r.stock,r.unit,r.date)
+ ).join("");
+
+ updateExpiryAlerts();
+}
+
+function collectData(){const data={};ids.forEach(id=>data[id]=el[id].value);data.purchased=purchased;data.customItems=customItems;return data}
+function savePurchasedOnly(){localStorage.setItem("bousaiStockV10",JSON.stringify(collectData()))}
+function applyData(data){ids.forEach(id=>{if(data[id]!==undefined)el[id].value=data[id]});purchased=data.purchased||{};customItems=Array.isArray(data.customItems)?data.customItems:[]}
+function loadData(){
+ let saved=localStorage.getItem("bousaiStockV10")||localStorage.getItem("bousaiStockV9")||localStorage.getItem("bousaiStockV6");
+ if(saved){
+  try{applyData(JSON.parse(saved))}
+  catch(e){localStorage.removeItem("bousaiStockV10");}
+ }
+ // V11.3: 保存データの有無にかかわらず、開いた瞬間に結果を表示する。
+ calculate();
+}
+
+function saveNow(){
+ localStorage.setItem("bousaiStockV10",JSON.stringify(collectData()));
+ const s=document.getElementById("saveState");
+ if(s){s.textContent="保存済み ✓";setTimeout(()=>s.textContent="自動保存ON",900);}
+}
+
+function esc(s){
+ return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+}
+
+function renderCustom(){
+ const box=document.getElementById("customList");
+ if(!box)return;
+ if(customItems.length===0){box.innerHTML="<p class='note'>追加された備蓄品はありません。</p>";return;}
+ box.innerHTML=customItems.map((x,i)=>`
+   <div class="customItem">
+    <div class="customName">${esc(x.name)}</div>
+    <div class="customMeta">数量：${esc(x.qty)}${esc(x.unit||"")}<br>${expiryInfo(x.date||"").html}</div>
+    <div class="customActions">
+      <button class="customEdit" data-edit="${i}">編集</button>
+      <button class="customDelete" data-del="${i}">削除</button>
+    </div>
+   </div>`).join("");
+ box.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editCustom(Number(b.dataset.edit)));
+ box.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>deleteCustom(Number(b.dataset.del)));
+}
+
+function resetCustomEditor(){
+ editIndex=-1;
+ document.getElementById("customName").value="";
+ document.getElementById("customQty").value="1";
+ document.getElementById("customUnit").value="";
+ document.getElementById("customDate").value="";
+ document.getElementById("addCustomBtn").textContent="追加する";
+ document.getElementById("cancelEditBtn").style.display="none";
+}
+
+function editCustom(i){
+ const x=customItems[i];
+ document.getElementById("customName").value=x.name;
+ document.getElementById("customQty").value=x.qty;
+ document.getElementById("customUnit").value=x.unit||"";
+ document.getElementById("customDate").value=x.date||"";
+ editIndex=i;
+ document.getElementById("addCustomBtn").textContent="変更を保存";
+ document.getElementById("cancelEditBtn").style.display="block";
+}
+
+document.getElementById("cancelEditBtn").addEventListener("click",function(){
+ resetCustomEditor();
+});
+
+function deleteCustom(i){
+ const x=customItems[i];
+ const label=x ? "「"+x.name+"」" : "この備蓄品";
+ if(!confirm(label+"を削除しますか？\n\nこの操作では、この1件だけを削除します。"))return;
+ customItems.splice(i,1);
+ // 編集中の項目を削除した場合は編集状態を必ず解除。
+ // それより前の項目を削除した場合は編集対象の位置を補正。
+ if(editIndex===i){
+  resetCustomEditor();
+ }else if(editIndex>i){
+  editIndex--;
+ }
+ saveNow();renderCustom();updateExpiryAlerts();calculate();
+}
+
+document.getElementById("addCustomBtn").addEventListener("click",function(){
+ const name=document.getElementById("customName").value.trim();
+ if(!name){alert("品名を入力してください。");return;}
+ const item={
+  name:name,
+  qty:Math.max(0,Number(document.getElementById("customQty").value||0)),
+  unit:document.getElementById("customUnit").value.trim(),
+  date:document.getElementById("customDate").value
+ };
+ if(editIndex>=0){customItems[editIndex]=item;}else{customItems.push(item);}
+ resetCustomEditor();
+ saveNow();renderCustom();updateExpiryAlerts();calculate();
+});
+
+function resetData(){
+ if(!confirm("保存した備蓄データ・期限・購入済みチェックを削除しますか？"))return;
+ localStorage.removeItem("bousaiStockV10");purchased={};customItems=[];
+ el.adult.value=2;el.child.value=1;el.senior.value=0;el.days.value=7;
+ ["water","food","toilet","gas","battery","mask","tissue","wet"].forEach(id=>el[id].value=0);
+ ["waterDate","foodDate","toiletDate","gasDate","batteryDate","maskDate","tissueDate","wetDate"].forEach(id=>el[id].value="");
+ summary.innerHTML="保存データをリセットしました。";results.innerHTML="";shoppingList.innerHTML="まだ計算されていません";overallPercent.textContent="0%";overallBar.style.width="0%";renderCustom();updateExpiryAlerts();
+}
+
+document.getElementById("calcBtn").addEventListener("click",calculate);
+
+document.getElementById("resetBtn").addEventListener("click",resetData);
+document.querySelectorAll('input[type="number"]').forEach(function(input){
+  input.addEventListener("focus",function(){
+    if(this.value==="0"){
+      this.value="";
+    }else{
+      setTimeout(()=>{
+        try{ this.select(); }catch(e){}
+      },50);
+    }
+  });
+
+  input.addEventListener("click",function(){
+    if(this.value==="0"){
+      this.value="";
+    }
+  });
+
+  input.addEventListener("blur",function(){
+    if(this.value===""){
+      this.value="0";
+    }
+  });
+});
+renderCustom();
+
+ids.forEach(function(id){
+ const node=el[id];
+ const ev=(node.tagName==="SELECT"||node.type==="date")?"change":"input";
+ node.addEventListener(ev,function(){
+  clearTimeout(node._saveTimer);
+  node._saveTimer=setTimeout(function(){calculate();saveNow();},180);
+ });
+});
+
+loadData();
+renderCustom();
+});
+</script>
+</body>
+</html>
