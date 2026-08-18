@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>V7 Security XSSテスト</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:18px;background:#f4f7fb;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;color:#222}
+.card{background:#fff;padding:18px;border-radius:18px;margin-bottom:16px;box-shadow:0 3px 12px rgba(0,0,0,.05)}
+h1{font-size:25px}
+button{width:100%;padding:15px;margin-top:12px;border:0;border-radius:12px;font-size:17px;font-weight:bold;color:#fff;background:#3867e8}
+button.restore{background:#777}
+.pass{color:#198754;font-weight:bold;font-size:20px}
+.fail{color:#c0392b;font-weight:bold;font-size:20px}
+.note{font-size:14px;color:#666;line-height:1.6}
+iframe{width:100%;height:560px;border:1px solid #ddd;border-radius:12px;background:#fff}
+code{word-break:break-all}
+</style>
+</head>
+<body>
+
+<h1>🔐 V7 Security XSSテスト</h1>
+
+<div class="card">
+<p class="note">
+このページは、保存データに悪意のあるHTML/JavaScriptを混ぜて
+「わが家の備蓄チェック V7 Security」を読み込ませます。
+通常の保存データはテスト開始前に退避します。
+</p>
+
+<button id="startBtn">攻撃データでテスト開始</button>
+<button id="restoreBtn" class="restore">元の保存データに戻す</button>
+
+<div id="result" style="margin-top:16px">まだテストしていません。</div>
+</div>
+
+<div class="card">
+<h2>テスト対象</h2>
+<div class="note">
+① 日付欄へのHTML/JavaScript混入<br>
+② その他備蓄品「品名」へのHTML混入<br>
+③ 「単位」へのHTML混入<br>
+④ null・不正型の混入<br>
+⑤ 人数の異常値（99999 / 小数）<br>
+⑥ 未知の購入済みキー
+</div>
+</div>
+
+<div class="card">
+<h2>V7 Security表示</h2>
+<iframe id="appFrame" title="V7 Security test"></iframe>
+</div>
+
+<script>
+const DATA_KEY="bousaiStockV10";
+const BACKUP_KEY="bousaiStockSecurityTestBackup";
+const XSS_FLAG="bousaiStockXssExecuted";
+
+const maliciousDate =
+  `2026-08-18"><img src=x onerror="localStorage.setItem('${XSS_FLAG}','YES')">`;
+
+const maliciousName =
+  `<img src=x onerror="localStorage.setItem('${XSS_FLAG}','YES')">危険な品名`;
+
+const maliciousUnit =
+  `<svg onload="localStorage.setItem('${XSS_FLAG}','YES')"></svg>個`;
+
+const payload={
+  adult:"99999",
+  child:"2.9",
+  senior:"-10",
+  days:"<img src=x onerror=alert(1)>",
+  hasPet:true,
+
+  water:"30",
+  waterDate:maliciousDate,
+
+  food:"10",
+  foodDate:"not-a-date",
+
+  toilet:"20",
+  toiletDate:"2026-12-31",
+
+  gas:"5",
+  gasDate:"2026-12-31",
+
+  battery:"8",
+  batteryDate:"2026-12-31",
+
+  mask:"20",
+  maskDate:"2026-12-31",
+
+  tissue:"3",
+  tissueDate:"2026-12-31",
+
+  wet:"3",
+  wetDate:"2026-12-31",
+
+  flashlight:"2",
+  flashlightDate:"2026-12-31",
+
+  radio:"1",
+  radioDate:"2026-12-31",
+
+  medicine:"7",
+  medicineDate:"2026-12-31",
+
+  petSupplies:"7",
+  petSuppliesDate:"2026-12-31",
+
+  purchased:{
+    water:true,
+    "__proto__":true,
+    unknownKey:true
+  },
+
+  customItems:[
+    {
+      id:"test1",
+      name:maliciousName,
+      qty:"2",
+      unit:maliciousUnit,
+      date:maliciousDate
+    },
+    null,
+    "bad item",
+    {
+      id:"test2",
+      name:"正常な備蓄品",
+      qty:"999999999999",
+      unit:"個",
+      date:"2026-02-31"
+    }
+  ]
+};
+
+function backup(){
+  if(sessionStorage.getItem(BACKUP_KEY)!==null)return;
+  const current=localStorage.getItem(DATA_KEY);
+  sessionStorage.setItem(
+    BACKUP_KEY,
+    current===null ? "__NO_DATA__" : current
+  );
+}
+
+function restore(){
+  const backupValue=sessionStorage.getItem(BACKUP_KEY);
+
+  if(backupValue===null){
+    document.getElementById("result").innerHTML=
+      "<span class='fail'>退避データがありません。</span>";
+    return;
+  }
+
+  if(backupValue==="__NO_DATA__"){
+    localStorage.removeItem(DATA_KEY);
+  }else{
+    localStorage.setItem(DATA_KEY,backupValue);
+  }
+
+  localStorage.removeItem(XSS_FLAG);
+
+  document.getElementById("result").innerHTML=
+    "<span class='pass'>✅ 元の保存データに戻しました。</span>";
+
+  document.getElementById("appFrame").src=
+    "/bousai-stock-app/wagaya_bichiku_check_v7_security.html?restore="+Date.now();
+}
+
+function runTest(){
+  backup();
+
+  localStorage.removeItem(XSS_FLAG);
+  localStorage.setItem(DATA_KEY,JSON.stringify(payload));
+
+  const frame=document.getElementById("appFrame");
+  frame.src=
+    "/bousai-stock-app/wagaya_bichiku_check_v7_security.html?securitytest="+Date.now();
+
+  const result=document.getElementById("result");
+  result.textContent="テスト中です…";
+
+  setTimeout(()=>{
+    const executed=localStorage.getItem(XSS_FLAG)==="YES";
+
+    if(executed){
+      result.innerHTML=
+        "<span class='fail'>❌ FAIL：攻撃用JavaScriptが実行されました。</span><br>"+
+        "<span class='note'>このV7は使用せず、追加修正が必要です。</span>";
+    }else{
+      result.innerHTML=
+        "<span class='pass'>✅ PASS：攻撃用JavaScriptは実行されませんでした。</span><br>"+
+        "<span class='note'>下のV7画面で、攻撃文字列がHTMLとして動作していないことも確認してください。"+
+        "テスト終了後は「元の保存データに戻す」を押してください。</span>";
+    }
+  },2500);
+}
+
+document.getElementById("startBtn").addEventListener("click",runTest);
+document.getElementById("restoreBtn").addEventListener("click",restore);
+</script>
+</body>
+</html>
