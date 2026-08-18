@@ -1,9 +1,9 @@
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v3";
 const CACHE_PREFIX = "wagaya-bichiku-";
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 
 const BASE_PATH = "/bousai-stock-app/";
-const APP_PAGE = BASE_PATH + "wagaya_bichiku_check_v6.html";
+const APP_PAGE = BASE_PATH + "index.html";
 
 const PRECACHE_URLS = [
   APP_PAGE,
