@@ -4,7 +4,7 @@
   "short_name": "備蓄チェック",
   "description": "家族構成から必要な防災備蓄量を確認・管理できるアプリです。",
   "lang": "ja",
-  "start_url": "/bousai-stock-app/wagaya_bichiku_check_v6.html",
+  "start_url": "/bousai-stock-app/",
   "scope": "/bousai-stock-app/",
   "display": "standalone",
   "orientation": "portrait",
